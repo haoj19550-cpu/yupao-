@@ -1,0 +1,31 @@
+# 线上配置文件
+# @author <a href="https://github.com/liyupi">程序员鱼皮</a>
+# @from <a href="https://yupi.icu">编程导航知识星球</a>
+# 注意开源时这个文件不要提交、或者不要填真实配置
+spring:
+  # DataSource Config - 支持环境变量覆盖
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: ${SPRING_DATASOURCE_URL:jdbc:mysql://localhost:3306/yupao?serverTimezone=Asia/Shanghai&useUnicode=true&characterEncoding=utf8&useSSL=false&allowPublicKeyRetrieval=true}
+    username: ${SPRING_DATASOURCE_USERNAME:root}
+    password: ${SPRING_DATASOURCE_PASSWORD:123456}
+
+  # Session 配置
+  session:
+    timeout: 86400
+  # Redis 配置 - 支持环境变量覆盖
+  redis:
+    host: ${SPRING_REDIS_HOST:localhost}
+    port: ${SPRING_REDIS_PORT:6379}
+    password: ${SPRING_REDIS_PASSWORD:}
+    database: 0
+server:
+  address: 0.0.0.0
+  servlet:
+    context-path: /api
+  session:
+    cookie:
+      domain: ${COOKIE_DOMAIN:}
+      http-only: true
+      secure: true
+      same-site: none
