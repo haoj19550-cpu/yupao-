@@ -1,9 +1,7 @@
 # 数据库初始化
-create
-database if not exists yupao;
+create database if not exists yupao;
 
-use
-yupao;
+use yupao;
 
 -- 用户表
 create table user
@@ -76,5 +74,3 @@ create table tag
 create index idx_userId
     on tag (userId);
 
-
-delete from user where createTime=2026-04-10 ;
