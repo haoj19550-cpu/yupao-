@@ -1,28 +1,33 @@
 <template>
-  <van-form @submit="onSubmit">
-    <van-cell-group inset>
-      <van-field
-          v-model="userAccount"
-          name="userAccount"
-          label="账号"
-          placeholder="请输入账号"
-          :rules="[{ required: true, message: '请填写用户名' }]"
-      />
-      <van-field
-          v-model="userPassword"
-          type="password"
-          name="userPassword"
-          label="密码"
-          placeholder="请输入密码"
-          :rules="[{ required: true, message: '请填写密码' }]"
-      />
-    </van-cell-group>
-    <div style="margin: 16px;">
-      <van-button round block type="primary" native-type="submit">
-        提交
-      </van-button>
+  <div class="login-page">
+    <van-nav-bar title="登录" left-arrow @click-left="$router.back()" />
+    <div class="login-content">
+      <van-form @submit="onSubmit">
+        <van-cell-group inset>
+          <van-field
+              v-model="userAccount"
+              name="userAccount"
+              label="账号"
+              placeholder="请输入账号"
+              :rules="[{ required: true, message: '请填写用户名' }]"
+          />
+          <van-field
+              v-model="userPassword"
+              type="password"
+              name="userPassword"
+              label="密码"
+              placeholder="请输入密码"
+              :rules="[{ required: true, message: '请填写密码' }]"
+          />
+        </van-cell-group>
+        <div style="margin: 16px;">
+          <van-button round block type="primary" native-type="submit">
+            提交
+          </van-button>
+        </div>
+      </van-form>
     </div>
-  </van-form>
+  </div>
 </template>
 
 <script setup lang="ts">
@@ -56,5 +61,11 @@ const onSubmit = async () => {
 </script>
 
 <style scoped>
-
+.login-page {
+  min-height: 100vh;
+  background: #f7f8fa;
+}
+.login-content {
+  padding-top: 40px;
+}
 </style>
