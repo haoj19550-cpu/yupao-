@@ -7,7 +7,7 @@
     </van-tabs>
     <div style="margin-bottom: 16px" />
     <van-button class="add-button" type="primary" icon="plus" @click="toAddTeam" />
-    <team-card-list :teamList="teamList" />
+    <team-card-list :teamList="teamList" @refresh="listTeam" />
     <van-empty v-if="teamList?.length < 1" description="数据为空"/>
   </div>
 </template>

@@ -69,6 +69,10 @@ const props = withDefaults(defineProps<TeamCardListProps>(), {
   teamList: [] as TeamType[],
 });
 
+const emit = defineEmits<{
+  (e: 'refresh'): void;
+}>();
+
 const showPasswordDialog = ref(false);
 const password = ref('');
 const joinTeamId = ref(0);
@@ -108,6 +112,7 @@ const doJoinTeam = async () => {
   if (res?.code === 0) {
     Toast.success('加入成功');
     doJoinCancel();
+    emit('refresh');
   } else {
     Toast.fail('加入失败' + (res.description ? `，${res.description}` : ''));
   }
@@ -136,6 +141,7 @@ const doQuitTeam = async (id: number) => {
   });
   if (res?.code === 0) {
     Toast.success('操作成功');
+    emit('refresh');
   } else {
     Toast.fail('操作失败' + (res.description ? `，${res.description}` : ''));
   }
@@ -151,6 +157,7 @@ const doDeleteTeam = async (id: number) => {
   });
   if (res?.code === 0) {
     Toast.success('操作成功');
+    emit('refresh');
   } else {
     Toast.fail('操作失败' + (res.description ? `，${res.description}` : ''));
   }
