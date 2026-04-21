@@ -12,8 +12,7 @@ services:
       MYSQL_USER: yupao
       MYSQL_PASSWORD: ${MYSQL_PASSWORD:-yupao_db_2024}
       TZ: Asia/Shanghai
-    ports:
-      - "3306:3306"
+    ports: -"127.0.0.1:3306:3306"  # 生产环境不暴露端口，容器间通过 yupao-network 内部通信
     volumes:
       - mysql_data:/var/lib/mysql
       - ./sql/create_table.sql:/docker-entrypoint-initdb.d/init.sql
@@ -38,7 +37,7 @@ services:
     restart: always
     command: redis-server --requirepass ${REDIS_PASSWORD:-yupao_redis_2024} --appendonly yes --maxmemory 128mb --maxmemory-policy allkeys-lru
     ports:
-      - "6379:6379"
+      # - "6379:6379"   # 生产环境不需要暴露到宿主机，容器内通过 yupao-network 访问即可
     volumes:
       - redis_data:/data
     healthcheck:
@@ -50,6 +49,7 @@ services:
       - yupao-network
 
   # ========== 后端服务 ==========
+  # 部署前请确保 app.jar 已放置在当前目录下（由本地 mvn package 构建生成）
   backend:
     build:
       context: .
@@ -65,6 +65,7 @@ services:
       - SPRING_REDIS_HOST=redis
       - SPRING_REDIS_PORT=6379
       - SPRING_REDIS_PASSWORD=${REDIS_PASSWORD:-yupao_redis_2024}
+      - SERVER_SERVLET_SESSION_COOKIE_DOMAIN=
     depends_on:
       mysql:
         condition: service_healthy
@@ -74,9 +75,10 @@ services:
       - yupao-network
 
   # ========== 前端服务 ==========
+  # 部署前请确保 dist/ 目录已放置在 ../yupao-frontend-master/ 下（由本地 npm run build 生成）
   frontend:
     build:
-      context: ../yupao-frontend-master
+      context: ../yupao-frontend
       dockerfile: Dockerfile
     container_name: yupao-frontend
     restart: always

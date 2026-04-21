@@ -20,11 +20,11 @@ public class WebMvcConfg implements WebMvcConfigurer {
                 //设置允许跨域请求的域名
                 //当**Credentials为true时，**Origin不能为星号，需为具体的ip地址【如果接口不带cookie,ip无需设成具体ip】
                 .allowedOrigins("http://localhost:3000", "http://localhost:5173",
-                        "https://cloud-base-jh-7gdrxr7a9b8551a5-1320287214.tcloudbaseapp.com")
+                        )
                 //是否允许证书 不再默认开启
                 .allowCredentials(true)
                 //设置允许的方法
-                .allowedMethods("*")
+                .allowedMethods("GET", "POST", "PUT", "DELETE")
                 //跨域允许时间
                 .maxAge(3600);
     }

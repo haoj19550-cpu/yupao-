@@ -16,6 +16,7 @@ import com.yupi.yupao.utils.AlgorithmUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.math3.util.Pair;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.DigestUtils;
@@ -23,6 +24,7 @@ import org.springframework.util.DigestUtils;
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -43,7 +45,8 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
 
     @Resource
     private UserMapper userMapper;
-
+    @Resource
+    private RedisTemplate<String, Object> redisTemplate;
     /**
      * 盐值，混淆密码
      */
@@ -121,6 +124,14 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         Matcher matcher = Pattern.compile(validPattern).matcher(userAccount);
         if (matcher.find()) {
             return null;
+        }
+        String limitKey = String.format("login:limit:%s", userAccount);
+        Long count = redisTemplate.opsForValue().increment(limitKey);
+        if (count != null && count == 1) {
+            redisTemplate.expire(limitKey, 5, TimeUnit.MINUTES);
+        }
+        if (count != null && count > 5) {
+            throw new BusinessException(ErrorCode.FORBIDDEN, "登录尝试过多，请5分钟后再试");
         }
         // 2. 加密
         String encryptPassword = DigestUtils.md5DigestAsHex((SALT + userPassword).getBytes());
@@ -200,7 +211,10 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
             String tagsStr = user.getTags();
             Set<String> tempTagNameSet = gson.fromJson(tagsStr, new TypeToken<Set<String>>() {
             }.getType());
+            // ["","",""]
+            // 使用 Optional判断tempTagNameSet是不是空值，如果有空值，则返回一个空的Set
             tempTagNameSet = Optional.ofNullable(tempTagNameSet).orElse(new HashSet<>());
+//
             for (String tagName : tagNameList) {
                 if (!tempTagNameSet.contains(tagName)) {
                     return false;
@@ -210,13 +224,89 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         }).map(this::getSafetyUser).collect(Collectors.toList());
     }
 
+   /*传统写法*/
+//    @Override
+//    public List<User> searchUsersByTags(List<String> tagNameList) {
+//        if (CollectionUtils.isEmpty(tagNameList)) {
+//            throw new BusinessException(ErrorCode.PARAMS_ERROR);
+//        }
+//
+//        // 1. 先查询所有用户
+//        QueryWrapper<User> queryWrapper = new QueryWrapper<>();
+//        List<User> userList = userMapper.selectList(queryWrapper);
+//        Gson gson = new Gson();
+//
+//        // 2. 在内存中判断是否包含要求的标签
+//        List<User> resultList = new ArrayList<>();
+//
+//        for (User user : userList) {
+//            // 解析用户的标签
+//            String tagsStr = user.getTags();
+//            Set<String> tempTagNameSet = gson.fromJson(tagsStr, new TypeToken<Set<String>>() {
+//            }.getType());
+//
+//            // 空值保护
+//            tempTagNameSet = Optional.ofNullable(tempTagNameSet).orElse(new HashSet<>());
+//
+//            // 判断是否包含所有目标标签
+//            boolean match = true;
+//            for (String tagName : tagNameList) {
+//                if (!tempTagNameSet.contains(tagName)) {
+//                    match = false;
+//                    break;  // 只要有一个标签不匹配，就跳出循环
+//                }
+//            }
+//
+//            // 如果匹配成功，脱敏后加入结果集
+//            if (match) {
+//                resultList.add(this.getSafetyUser(user));
+//            }
+//        }
+//
+//        return resultList;
+//    }
+
     @Override
     public int updateUser(User user, User loginUser) {
         long userId = user.getId();
         if (userId <= 0) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }
-        // todo 补充校验，如果用户没有传任何要更新的值，就直接报错，不用执行 update 语句
+        //  如果用户没有传任何要更新的值，就直接报错，不用执行 update 语句
+        // 判断用户是否有任何字段被修改
+        boolean isUpdated = false;
+
+        if (user.getUsername() != null && !user.getUsername().equals(loginUser.getUsername())) {
+            isUpdated = true;
+        }
+        if (user.getAvatarUrl() != null && !user.getAvatarUrl().equals(loginUser.getAvatarUrl())) {
+            isUpdated = true;
+        }
+        if (user.getGender() != null && !user.getGender().equals(loginUser.getGender())) {
+            isUpdated = true;
+        }
+        if (user.getPhone() != null && !user.getPhone().equals(loginUser.getPhone())) {
+            isUpdated = true;
+        }
+        if (user.getEmail() != null && !user.getEmail().equals(loginUser.getEmail())) {
+            isUpdated = true;
+        }
+        if (user.getTags() != null && !user.getTags().equals(loginUser.getTags())) {
+            isUpdated = true;
+        }
+        if (user.getUserStatus() != null && !user.getUserStatus().equals(loginUser.getUserStatus())) {
+            isUpdated = true;
+        }
+        if (user.getPlanetCode() != null && !user.getPlanetCode().equals(loginUser.getPlanetCode())) {
+            isUpdated = true;
+        }
+
+// 如果没有任何字段被修改，抛出异常
+        if (!isUpdated) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "没有需要更新的字段");
+        }
+
+        // 排除不需要比较的字段（id、createTime、updateTime、isDelete 等）
         // 如果是管理员，允许更新任意用户
         // 如果不是管理员，只允许更新当前（自己的）信息
         if (!isAdmin(loginUser) && userId != loginUser.getId()) {

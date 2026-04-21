@@ -10,8 +10,9 @@ spring:
     username: ${SPRING_DATASOURCE_USERNAME:root}
     password: ${SPRING_DATASOURCE_PASSWORD:123456}
 
-  # Session 配置
+  # Session 配置（使用 Redis 存储 Session）
   session:
+    store-type: redis
     timeout: 86400
   # Redis 配置 - 支持环境变量覆盖
   redis:
@@ -23,9 +24,9 @@ server:
   address: 0.0.0.0
   servlet:
     context-path: /api
-  session:
-    cookie:
-      domain: ${COOKIE_DOMAIN:}
-      http-only: true
-      secure: true
-      same-site: none
+    session:
+      cookie:
+        domain:
+        http-only: true
+        secure: false   # 未配置 HTTPS 时必须为 false，配置 HTTPS 后改为 true
+        same-site: lax  # secure=false 时不能用 none，否则浏览器拒绝 Cookie；HTTPS 后改为 none

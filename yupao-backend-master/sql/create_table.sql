@@ -1,4 +1,5 @@
 # 数据库初始化
+SET NAMES utf8mb4;
 create database if not exists yupao;
 
 use yupao;
